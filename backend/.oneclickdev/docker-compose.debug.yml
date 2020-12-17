@@ -1,0 +1,17 @@
+version: "3.7"
+services:
+  test-app-backend-debug:
+    image: test-app-backend
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    environment:
+      - ENVIRONMENT=docker
+      - NODE_ENV=development
+      - IS_DOCKER=docker
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./dist:/usr/src/app/dist
+    command: npm run dev:watch-debug-docker

@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  test-app-backend-autoscan:
+    image: test-app-backend
+    environment:
+      - ENVIRONMENT=docker
+      - NODE_ENV=development
+    command: npm run test:watch
+    tty: true
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./test:/usr/src/app/test
+    entrypoint: ""

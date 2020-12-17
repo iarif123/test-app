@@ -1,0 +1,133 @@
+#!/bin/bash
+source .oneclickdev/config.env
+set -e
+
+start() {
+    smart_rebuild
+    dep
+    echo "Bringing up $APP_IMG..."
+    docker-compose up --detach $APP_IMG
+    wait_for_app
+    echo -e "\033[0;32m[SUCCESS]\033[0m"
+}
+
+dep() {
+    echo "Bringing up all Docker containers except for $APP_IMG..."
+    docker-compose up --detach --scale $APP_IMG=0
+    echo -e "\033[0;32m[SUCCESS]\033[0m"
+}
+
+stop() {
+    echo "Stopping and removing Docker containers..."
+    docker-compose -f docker-compose.yml -f .oneclickdev/docker-compose.debug.yml -f .oneclickdev/docker-compose.test.yml -f .oneclickdev/docker-compose.autoscan.yml down -v
+    remove_dangling_images
+    echo -e "\033[0;32m[SUCCESS]\033[0m"
+}
+
+debug() {
+    smart_rebuild
+    if [[ ! -z `docker-compose ps -q $APP_IMG` ]] ; then
+        echo "Stopping $APP_IMG container..."
+        docker-compose stop $APP_IMG
+    fi
+    echo "Running $DEBUG_IMG container..."
+    docker-compose -f docker-compose.yml -f .oneclickdev/docker-compose.debug.yml run --rm --service-ports $DEBUG_IMG
+    if [[ ! -z `docker-compose ps -q $APP_IMG` ]] ; then
+        echo "Restarting $APP_IMG container..."
+        docker-compose start $APP_IMG
+    fi
+}
+
+logs() {
+    trap 'exit 0' INT
+    docker logs -f $(docker-compose ps -q $1)
+}
+
+autoscan() {
+    smart_rebuild
+    docker-compose -f docker-compose.yml -f .oneclickdev/docker-compose.autoscan.yml run --rm $AUTOSCAN_IMG
+}
+
+test() {
+    build
+    dep
+    echo "Running all unit tests..."
+    docker-compose -f docker-compose.yml -f .oneclickdev/docker-compose.test.yml up --force-recreate --remove-orphans --abort-on-container-exit --exit-code-from $TEST_IMG $TEST_IMG
+}
+
+int-test() {
+    build
+    start
+    echo "Running all integration tests..."
+    docker-compose -f docker-compose.yml exec $APP_IMG npm run integration-test
+}
+
+build() {
+    docker-compose build
+    remove_dangling_images
+}
+
+remove_dangling_images() {
+    danglers=$(docker images -q -f "dangling=true" -f "label=autodelete=true")
+    if [[ -n "$danglers" ]] ; then
+        echo "Removing dangling images..."
+        docker rmi -f $danglers
+    fi
+}
+
+smart_rebuild() {
+    make -s -f .oneclickdev/Makefile .oneclickdev/smartrebuild.o
+}
+
+wait_for_exit() {
+    if [[ ! `docker wait $(docker-compose ps -q $*)` = "0" ]] ; then
+        docker-compose logs $*
+        echo -e "\033[0;31m[FAILURE]\033[0m"
+        exit 1
+    fi
+}
+
+wait_for_log_output() {
+    local img="$1"; shift
+    local pattern="$1"; shift
+    local timeout="${1:-3m}" # default 1-minute timeout
+    trap 'echo Caught interrupt and exiting; exit' INT
+    timeout --foreground $timeout docker-compose logs -f $img | grep -q "$pattern" && return 0
+    echo "Could not find '$pattern' in $img logs after $timeout"
+}
+
+wait_for_app() {
+    echo "Waiting for test-app-backend to initialize..."
+    local err=$(wait_for_log_output ${APP_IMG} "AppServer started...")
+    if [[ $err ]] ; then
+        echo -e "\033[0;31m[FAILURE]\033[0m"
+        echo $err
+        exit 1
+    fi
+}
+
+case "$1" in
+    start)            start ;;
+    stop)             stop ;;
+    restart)          stop; start ;;
+    logs)             shift; logs ${1:-$APP_IMG} ;;
+    test)             test ;;
+    int-test)         int-test ;;
+    debug)            debug ;;
+    autoscan)         autoscan ;;
+    build)            build ;;
+    dep)              dep ;;
+    *) echo "Usage:"
+        echo "  $0 start          - Start $APP_IMG service"
+        echo "  $0 stop           - Stop all running services"
+        echo "  $0 restart        - Restart $APP_IMG service"
+        echo "  $0 debug          - Start $APP_IMG service in debug mode"
+        echo "  $0 logs           - Tail $APP_IMG logs"
+        echo "  $0 autoscan       - Run $APP_IMG unit tests in watch mode"
+        echo "  $0 test           - Build $APP_IMG and run unit tests"
+        echo "  $0 int-test       - Build $APP_IMG and run integraiton tests"
+        echo "  $0 build          - Build docker-compose.yml"
+        echo "  $0 dep            - Start all services except for the main application service"
+        exit 1
+        ;;
+esac

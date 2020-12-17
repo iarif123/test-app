@@ -1,0 +1,14 @@
+.git
+node_modules
+deploy
+one-for-all
+Dockerfile
+.DS_Store
+.gitignore
+README.md
+./vscode
+.circleci
+docker-compose.yml
+docker-compose.override.yml
+# To prevent storing dev/temporary container data
+tmp

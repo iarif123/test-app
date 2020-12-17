@@ -1,0 +1,10 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true
+  },
+  "tslint.ignoreDefinitionFiles": false,
+  "tslint.exclude": "**/node_modules/**/*",
+  "jest.pathToConfig": "./jest.unit.config.js"
+}

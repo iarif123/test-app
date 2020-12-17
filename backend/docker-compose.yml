@@ -1,0 +1,63 @@
+version: "3.7"
+services:
+  ###################
+  # Custom services #
+  ###################
+
+  db:
+    image: mysql:5.6
+    build:
+      context: .
+      dockerfile: database/Dockerfile
+    environment:
+      MYSQL_HOST: localhost
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: "test-app-database"
+      MYSQL_USER: "root"
+    command: mysqld --init-file="/tmp/database/install_db.sql" --secure-file-priv=""
+    ports:
+      - "8888:3306"
+    expose:
+      - "3306"
+    hostname: db
+
+  localstack:
+    hostname: localstack
+    image: localstack/localstack:0.8.10
+    environment:
+      - SERVICES=s3,lambda,cloudformation # List of services to bring up
+      - LAMBDA_EXECUTOR=docker # Required for lambda only
+    ports:
+      - "4572:4572" # S3
+      - "4574:4574" # Lambda
+      - "4581:4581" # CloudFormation
+      - "8080:8080" # LocalStack Web UI
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock" # Required for lambda only
+
+  test-app-backend:
+    image: test-app-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    depends_on:
+      - db
+      - localstack
+    ports:
+      - 3000:3000
+    environment:
+      - NODE_ENV=test
+      - ENVIRONMENT=test
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - DB_HOST=db
+      - DB_NAME=test-app-database
+      - DB_USER=root
+      - PORT=3000
+      - DB_ORM_MIGRATIONS_RUN=true
+    volumes:
+      - ./src:/var/app/src
+      - ./dist:/var/app/dist
+      - ./integration-tests:/var/app/integration-tests

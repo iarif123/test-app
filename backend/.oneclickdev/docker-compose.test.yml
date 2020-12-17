@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+  test-app-backend-test:
+    image: test-app-backend
+    environment:
+      - ENVIRONMENT=docker
+      - NODE_ENV=test
+    command: npm run test
+    tty: true
+    volumes:
+      - ./reports:/usr/src/app/reports
+    entrypoint: ""
