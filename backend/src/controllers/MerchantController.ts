@@ -1,4 +1,4 @@
-import { Logger } from "node-logger";
+import { Logger } from "simple-node-logger";
 import {
   Controller,
   Get,

@@ -1,6 +1,6 @@
 import { environment, localstackS3 } from "../config";
 
-import { Logger } from "node-logger";
+import { Logger } from "simple-node-logger";
 import { S3 } from "aws-sdk";
 
 import * as fs from "fs";

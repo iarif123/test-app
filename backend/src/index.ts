@@ -1,4 +1,4 @@
-import { Logger } from "node-logger";
+import { Logger } from "simple-node-logger";
 import { AppServer } from "./AppServer";
 
 const logger = new Logger("test-app-backend-logger");

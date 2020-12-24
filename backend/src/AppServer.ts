@@ -8,7 +8,7 @@ import * as BodyParser from "body-parser";
 import * as Compression from "compression";
 import * as CookieParser from "cookie-parser";
 import * as MethodOverride from "method-override";
-import { Logger } from "node-logger";
+import { Logger } from "simple-node-logger";
 import * as TypeOrm from "typeorm";
 import * as Config from "./config";
 

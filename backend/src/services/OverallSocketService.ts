@@ -1,6 +1,6 @@
 import { Nsp, Socket, SocketService, SocketSession } from "@tsed/socketio";
 import * as SocketIO from "socket.io";
-import { Logger } from "node-logger";
+import { Logger } from "simple-node-logger";
 import { SocketUpdateDto } from "../types";
 
 @SocketService("/")
