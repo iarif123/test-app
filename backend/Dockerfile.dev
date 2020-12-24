@@ -24,7 +24,7 @@ RUN cp -R node_modules prod_node_modules
 
 # Install all packages (including devDependencies)
 ENV NODE_ENV development
-RUN npm ci
+RUN npm install
 
 # ---- Development ----
 FROM dependencies AS development

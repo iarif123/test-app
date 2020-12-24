@@ -15,7 +15,7 @@ RUN mkdir -p /var/app
 WORKDIR /var/app
 
 # Install packages 
-RUN npm ci
+RUN npm install
 
 #Copy Application code to app folder
 COPY . /var/app
